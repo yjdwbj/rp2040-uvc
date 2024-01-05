@@ -220,7 +220,7 @@ void video_task(void) {
 
 #ifdef USE_FREERTOS
     do {
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(200));
         ov2640_capture_frame(&config);
 
         if (config.pixformat == PIXFORMAT_JPEG) {

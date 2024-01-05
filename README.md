@@ -15,10 +15,16 @@ Capture video on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/r
 ## Build
 
 ```sh
-~$ git cone --recurse-submodules https://github.com/yjdwbj/uvc_for_pico.git
+~$ git clone --recurse-submodules https://github.com/yjdwbj/uvc_for_pico.git
 ~$ cd uvc_for_pico && mkdir build
 ~$ cd build; cmake -DUSE_FREERTOS=1 ../ && make
 ```
+
+## Tips
+
+* `cmake -DUSE_FREERTOS=1` will enable `FreeRTOS` support which is recommand, otherwise use `main loop` instead.
+* If you set the OV2640 pixel format to `RGB565`, write the frame buffer directly to `LCD` and convert `rgb565 -> yuv422` to `UVC` stream.
+* If you set the OV2640 pixel format to `YUV422`, write the frame buffer directly to `UVC` and convert `yuv422 -> rgb565` to `LCD`. But there is a serious bug here, green/inverted block areas are very frequent.
 
 ## Demo run
 ![gif](images/running_uvc.gif)

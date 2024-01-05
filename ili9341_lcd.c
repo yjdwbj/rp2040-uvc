@@ -262,24 +262,36 @@ uint16_t yuv422_to_rgb565(int y, int u, int v) {
 
 void rgb565_to_yuv422(uint32_t *data, int len) {
     //  FIXME: This conversion will lose a lot of color, approaching a grayscale display.
-    uint8_t r, g, b;
+
     for (int i = 0; i < len; i++, data++) {
         uint16_t first = *data & 0xffff;
         uint16_t second = (*data >> 16) & 0xffff;
         uint8_t *dst = (uint8_t *)data;
 
-        r = ((first & (0x1f << 11)) >> 8);
-        g = ((first & (0x3f << 5)) >> 3);
-        b = ((first & (0x1f << 0)) << 3);
-        dst[0] = VP8RGBToY(r, g, b, YUV_HALF);
-        dst[1] = VP8RGBToU(r, g, b, YUV_HALF << 2);
+#if 0
+        uint8_t r1,r2,g1,g2,b1,b2;
+        r1 = ((first & (0x1f << 11)) >> 8);
+        g1 = ((first & (0x3f << 5)) >> 3);
+        b1 = ((first & (0x1f << 0)) << 3);
+        dst[0] = VP8RGBToY(r1, g1, b1, YUV_HALF);
 
-        r = ((second & (0x1f << 11)) >> 8);
-        g = ((second & (0x3f << 5)) >> 3);
-        b = ((second & (0x1f << 0)) << 3);
-        dst[2] = VP8RGBToY(r, g, b, YUV_HALF);
-        dst[3] = VP8RGBToV(r, g, b, YUV_HALF << 2);
+        r2 = ((second & (0x1f << 11)) >> 8);
+        g2 = ((second & (0x3f << 5)) >> 3);
+        b2 = ((second & (0x1f << 0)) << 3);
+        dst[2] = VP8RGBToY(r2, g2, b2, YUV_HALF);
 
+        dst[1] = VP8RGBToU(r1 + r2, g1 + g2, b1 + b2, YUV_HALF << 2);
+        dst[3] = VP8RGBToV(r1 + r2, g1 + g2, b1 + b2, YUV_HALF << 2);
+#else
+        uint8_t rgb1[3], rgb2[3];
+        color16to24(first, rgb1);
+        color16to24(second, rgb2);
+        dst[0] = VP8RGBToY(rgb1[0], rgb1[1], rgb1[2], YUV_HALF);
+        dst[2] = VP8RGBToY(rgb2[0], rgb2[1], rgb2[2], YUV_HALF);
+
+        dst[1] = VP8RGBToU(rgb1[0] + rgb2[0], rgb1[1] + rgb2[1], rgb1[2] + rgb2[2], YUV_HALF << 2);
+        dst[3] = VP8RGBToV(rgb1[0] + rgb2[0], rgb1[1] + rgb2[1], rgb1[2] + rgb2[2], YUV_HALF << 2);
+#endif
     }
 }
 

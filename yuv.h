@@ -99,6 +99,7 @@ static inline int VP8ClipUV(int uv, int rounding) {
                                                : 255;
 }
 
+#define USE_YUVj
 #ifndef USE_YUVj
 static inline int VP8RGBToY(int r, int g, int b, int rounding) {
     const int luma = 16839 * r + 33059 * g + 6420 * b;
@@ -129,6 +130,15 @@ static inline int VP8RGBToV(int r, int g, int b, int rounding) {
 }
 #endif // USE_YUVj
 
-void rgb565_to_yuv422(uint32_t *data, int len);
+static inline void color16to24(uint16_t color565,uint8_t *dst) {
+    dst[0] = (color565 >> 8) & 0xF8;
+    dst[0] |= (dst[0] >> 5);
+    dst[1] = (color565 >> 3) & 0xFC;
+    dst[1] |= (dst[1] >> 6);
+    dst[2] = (color565 << 3) & 0xF8;
+    dst[2] |= (dst[2] >> 5);
+}
+
+void rgb565_to_yuv422(uint32_t * data, int len);
 
 #endif // RP2040_YUV_H_
