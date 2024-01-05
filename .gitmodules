@@ -3,6 +3,9 @@
 	url = https://github.com/raspberrypi/pico-sdk
 
 [submodule "tinyusb"]
-	path = tinyusb
+	path = pico-sdk/lib/tinyusb
 	url = https://github.com/hathach/tinyusb
 
+[submodule "freertos"]
+	path = freertos
+	url = https://github.com/FreeRTOS/FreeRTOS-Kernel

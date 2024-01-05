@@ -252,14 +252,40 @@ void ili9341_show_rgb565_data(uint16_t *data, int len) {
     }
 }
 
-uint16_t yuv422_to_rgb565(int y, int u, int v){
+uint16_t yuv422_to_rgb565(int y, int u, int v) {
     uint16_t rgb = 0;
     VP8YuvToRgb565(y,u,v,(uint8_t *)&rgb);
+    *(volatile uint8_t *)&tft_pio->txf[pio_sm] = (rgb >> 8);
+    *(volatile uint8_t *)&tft_pio->txf[pio_sm] = rgb & 0xff;
     return rgb;
+}
+
+void rgb565_to_yuv422(uint32_t *data, int len) {
+    //  FIXME: This conversion will lose a lot of color, approaching a grayscale display.
+    uint8_t r, g, b;
+    for (int i = 0; i < len; i++, data++) {
+        uint16_t first = *data & 0xffff;
+        uint16_t second = (*data >> 16) & 0xffff;
+        uint8_t *dst = (uint8_t *)data;
+
+        r = ((first & (0x1f << 11)) >> 8);
+        g = ((first & (0x3f << 5)) >> 3);
+        b = ((first & (0x1f << 0)) << 3);
+        dst[0] = VP8RGBToY(r, g, b, YUV_HALF);
+        dst[1] = VP8RGBToU(r, g, b, YUV_HALF << 2);
+
+        r = ((second & (0x1f << 11)) >> 8);
+        g = ((second & (0x3f << 5)) >> 3);
+        b = ((second & (0x1f << 0)) << 3);
+        dst[2] = VP8RGBToY(r, g, b, YUV_HALF);
+        dst[3] = VP8RGBToV(r, g, b, YUV_HALF << 2);
+
+    }
 }
 
 void ili9341_show_yuv422_data(uint32_t *data, int len) {
     int y1, y2, u, v;
+    uint16_t pixels = 0;
 
     // Extract yuv components
     for (int i = 0; i < len; i++) {
@@ -274,8 +300,8 @@ void ili9341_show_yuv422_data(uint32_t *data, int len) {
         v = (raw >> 16) & 0xff;
         y2 = (raw >> 24) & 0xff;
 #endif
-        shiftout(yuv422_to_rgb565(y1, u, v), 16);
-        shiftout(yuv422_to_rgb565(y2, u, v), 16);
+        yuv422_to_rgb565(y1, u, v);
+        yuv422_to_rgb565(y2, u, v);
     }
 }
 

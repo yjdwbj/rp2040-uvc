@@ -1,7 +1,6 @@
 #include "ov2640.h"
 #include "hardware/dma.h"
 #include "hardware/i2c.h"
-#include "hardware/pwm.h"
 #include "image.pio.h"
 #include "ov2640_init.h"
 #include "usb_descriptors.h"
@@ -155,6 +154,7 @@ void ov2640_capture_frame(struct ov2640_config *config) {
     dma_channel_wait_for_finish_blocking(config->dma_channel);
 
     dma_channel_abort(config->dma_channel);
+    dma_channel_unclaim(config->dma_channel);
 
 #if 0
     irq_set_exclusive_handler(DMA_IRQ_0, dma_complete_handler);

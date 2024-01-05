@@ -24,6 +24,7 @@
  */
 
 #include "bsp/board_api.h"
+// #include "bsp/board.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
 
@@ -76,10 +77,12 @@ uint8_t const * tud_descriptor_device_cb(void)
 // Configuration Descriptor
 //--------------------------------------------------------------------+
 
-
-// #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_MJPEG_LEN)
 #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_BULK_LEN)
-// #define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_LEN)
+
+#if 0
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_UNCOMPR_LEN)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_VIDEO_CAPTURE_DESC_MJPEG_LEN)
+#endif // not working defines
 
 #define EPNUM_VIDEO_IN 0x81
 
@@ -93,13 +96,17 @@ uint8_t const desc_fs_configuration[] =
         TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(4, EPNUM_VIDEO_IN,
                                                   FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
                                                   64),
-        // TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR(4, EPNUM_VIDEO_IN,
-        //                                      FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
-        //                                      CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE)
-        // TUD_VIDEO_CAPTURE_DESCRIPTOR_MJPEG(4, EPNUM_VIDEO_IN,
-        //                                    FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
-        //                                    CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE)
-
+#if 0
+        TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR(4, EPNUM_VIDEO_IN,
+                                             FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
+                                             CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE)
+        TUD_VIDEO_CAPTURE_DESCRIPTOR_MJPEG(4, EPNUM_VIDEO_IN,
+                                           FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
+                                           CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE),
+        TUD_VIDEO_CAPTURE_DESCRIPTOR_MJPEG_BULK(4, EPNUM_VIDEO_IN,
+                                                FRAME_WIDTH, FRAME_HEIGHT, FRAME_RATE,
+                                                CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE)
+#endif // not working
 };
 
 // Invoked when received GET CONFIGURATION DESCRIPTOR
@@ -139,6 +146,7 @@ static uint16_t _desc_str[32 + 1];
 // Invoked when received GET STRING DESCRIPTOR request
 // Application return pointer to descriptor, whose contents must exist long enough for transfer to complete
 uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
+#if 0
   (void) langid;
   size_t chr_count;
 
@@ -176,4 +184,35 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid) {
   _desc_str[0] = (uint16_t) ((TUSB_DESC_STRING << 8) | (2 * chr_count + 2));
 
   return _desc_str;
+#else
+    (void)langid;
+
+    uint8_t chr_count;
+
+    if (index == 0) {
+        memcpy(&_desc_str[1], string_desc_arr[0], 2);
+        chr_count = 1;
+    } else {
+        // Convert ASCII string into UTF-16
+
+        if (!(index < sizeof(string_desc_arr) / sizeof(string_desc_arr[0])))
+            return NULL;
+
+        const char *str = string_desc_arr[index];
+
+        // Cap at max char
+        chr_count = strlen(str);
+        if (chr_count > 31)
+            chr_count = 31;
+
+        for (uint8_t i = 0; i < chr_count; i++) {
+            _desc_str[1 + i] = str[i];
+        }
+    }
+
+    // first byte is length (including header), second byte is string type
+    _desc_str[0] = (TUSB_DESC_STRING << 8) | (2 * chr_count + 2);
+
+    return _desc_str;
+#endif
 }

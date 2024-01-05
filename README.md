@@ -12,6 +12,14 @@ Capture video on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/r
 ![ov2640 connected_cam](images/connected_cam.jpg)
 ![uvc](images/uvc.jpg)
 
+## Build
+
+```sh
+~$ git cone --recurse-submodules https://github.com/yjdwbj/uvc_for_pico.git
+~$ cd uvc_for_pico && mkdir build
+~$ cd build; cmake -DUSE_FREERTOS=1 ../ && make
+```
+
 ## Demo run
 ![gif](images/running_uvc.gif)
 
@@ -48,7 +56,7 @@ Capture video on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/r
 * query the capture formats the video device supports
 
 ```sh
-v4l2-ctl -d 4 --list-formats-ext
+v4l2-ctl -d 0 --list-formats-ext
 ioctl: VIDIOC_ENUM_FMT
         Type: Video Capture
 
@@ -59,7 +67,7 @@ ioctl: VIDIOC_ENUM_FMT
 
 * capture raw video stream from by v4l2-ctl.
 ```sh
-v4l2-ctl --device /dev/video2
+v4l2-ctl --device /dev/video0
 --set-fmt-video=width=320,height=240,pixelformat=YUYV --stream-mmap
 --stream-to=frame.raw --stream-count=1
 ```
@@ -73,5 +81,5 @@ ffmpeg -y -s:v 320x240 -pix_fmt yuyv422 -i frame.raw frame.jpg
 
 * play video from uvc device on linux.
 ```sh
-ffplay  -f v4l2 -framerate 25 -pix_fmt yuv422 -video_size 320x240  -i /dev/video5
+ffplay  -f v4l2 -framerate 25  -video_size 320x240  -i /dev/video0
 ```

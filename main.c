@@ -22,19 +22,23 @@
  * THE SOFTWARE.
  *
  */
+#include "bsp/board_api.h"
+// #define USE_FREERTOS
+#ifdef USE_FREERTOS
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h"
+#endif
 
 #include "hardware/dma.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#undef CFG_TUSB_DEBUG
-#define CFG_TUSB_DEBUG 2
-#include "bsp/board_api.h"
+// #include "bsp/board.h"
 #include "hardware/clocks.h"
 #include "tusb.h"
 #include "usb_descriptors.h"
-
 
 #include "ov2640.h"
 
@@ -69,6 +73,7 @@ const uint8_t CMD_CAPTURE = 0xCC;
 static uint8_t image_buf[FRAME_WIDTH * FRAME_HEIGHT * 2];
 extern void ili9341_show_rgb565_data(uint16_t *data, int len);
 extern void ili9341_show_yuv422_data(uint32_t *data, int len);
+extern void rgb565_to_yuv422(uint32_t *data, int len);
 extern int main_lcd_init();
 
 void led_blinking_task(void);
@@ -88,30 +93,66 @@ static struct ov2640_config config = {
     .dma_channel = 0,
     .image_buf = image_buf,
     .image_buf_size = sizeof(image_buf),
-    .pixformat = PIXFORMAT_YUV422,
+    .pixformat = PIXFORMAT_RGB565,
+    // .pixformat = PIXFORMAT_YUV422,  // FIXME: have to green/inverted block.
 };
 
 #define PLL_SYS_KHZ (133 * 1000)
+
+#ifdef USE_FREERTOS
+#define THREADED 1
+TickType_t last_wake, interval = 100;
+TimerHandle_t blinky_tm;
+
+#define TUD_TASK_PRIO (tskIDLE_PRIORITY + 2)
+#define CAM_TASK_PRIO (tskIDLE_PRIORITY + 1)
+TaskHandle_t cam_taskhandle, tud_taskhandle, video_taskhandle;
+
+
+void usb_thread(void *ptr) {
+    TickType_t wake;
+    wake = xTaskGetTickCount();
+    do {
+        tud_task();
+        if (!tud_task_event_ready())
+            xTaskDelayUntil(&wake, 1);
+    } while (1);
+}
+#endif
+
 
 /*------------- MAIN -------------*/
 int main(void) {
     set_sys_clock_khz(PLL_SYS_KHZ, true);
     board_init();
     tud_init(BOARD_TUD_RHPORT);
-
+    tusb_init();
     if (board_init_after_tusb) {
         board_init_after_tusb();
     }
     ov2640_init(&config);
     main_lcd_init();
-    printf("start main loop\n");
 
+#ifdef USE_FREERTOS
+    printf("Running on FreeRTOS\n");
+    if (THREADED) {
+        blinky_tm = xTimerCreate(NULL, pdMS_TO_TICKS(BLINK_MOUNTED), true, NULL, led_blinking_task);
+        xTaskCreate(usb_thread, "USB", configMINIMAL_STACK_SIZE, NULL, TUD_TASK_PRIO, &tud_taskhandle);
+        xTaskCreate(video_task, "CAMERA", configMINIMAL_STACK_SIZE, NULL, CAM_TASK_PRIO, &cam_taskhandle);
+        // xTaskCreate(video_task, "CAMERA", configMINIMAL_STACK_SIZE, NULL, CAM_TASK_PRIO, &cam_taskhandle);
+        xTimerStart(blinky_tm, 0);
+        vTaskStartScheduler();
+    }
+#else
+    printf("Start main loop\n");
     while (1) {
         tud_task(); // tinyusb device task
         led_blinking_task();
-
         video_task();
     }
+#endif
+
+
 }
 
 //--------------------------------------------------------------------+
@@ -154,7 +195,6 @@ static const uint16_t JPEG_EOI_MARKER = 0xD9FF;   // written in little-endian fo
 static int cam_verify_jpeg_soi(const uint8_t *inbuf, int length) {
     for (int i = 0; i < (int )length; i++) {
         if (memcmp(&inbuf[i], &JPEG_SOI_MARKER, 3) == 0) {
-            // ESP_LOGW(TAG, "SOI: %d", (int) i);
             return i;
         }
     }
@@ -177,20 +217,39 @@ static int cam_verify_jpeg_eoi(const uint8_t *inbuf, int length) {
 }
 
 void video_task(void) {
+
+#ifdef USE_FREERTOS
+    do {
+        vTaskDelay(pdMS_TO_TICKS(100));
+        ov2640_capture_frame(&config);
+
+        if (config.pixformat == PIXFORMAT_JPEG) {
+            cam_verify_jpeg_eoi(config.image_buf, (int)config.image_buf_size);
+            cam_verify_jpeg_soi(config.image_buf, (int)config.image_buf_size);
+        }
+        if (config.pixformat == PIXFORMAT_RGB565) {
+            ili9341_show_rgb565_data((void *)config.image_buf, (int)(config.image_buf_size / 2));
+        } else if (config.pixformat == PIXFORMAT_YUV422) {
+            ili9341_show_yuv422_data((void *)config.image_buf, (int)(config.image_buf_size / 4));
+        }
+        vTaskSuspendAll();
+        if (tud_video_n_streaming(0, 0)) {
+            if (config.pixformat == PIXFORMAT_RGB565) {
+                rgb565_to_yuv422((void *)config.image_buf, (int)(config.image_buf_size / 4));
+            }
+
+            tud_video_n_frame_xfer(0, 0, (void *)config.image_buf, config.image_buf_size);
+        }
+        xTaskResumeAll();
+    } while (1);
+#else
     static unsigned start_ms = 0;
     static unsigned already_sent = 0;
-
     if (!tud_video_n_streaming(0, 0)) {
         already_sent = 0;
         frame_num = 0;
         return;
     }
-    // printf("video task running\n");
-
-
-    // printf("write lcd data\n");
-    // ili9341_show_rgb565_data(config.image_buf, config.image_buf_size / 2);
-#if 1
     if(config.pixformat == PIXFORMAT_JPEG)
     {
         cam_verify_jpeg_eoi(config.image_buf, (int)config.image_buf_size);
@@ -203,6 +262,7 @@ void video_task(void) {
         ov2640_capture_frame(&config);
         if (config.pixformat == PIXFORMAT_RGB565) {
             ili9341_show_rgb565_data((void *)config.image_buf, (int)(config.image_buf_size / 2));
+            rgb565_to_yuv422((void *)config.image_buf, (int)(config.image_buf_size / 4));
         } else if (config.pixformat == PIXFORMAT_YUV422) {
             ili9341_show_yuv422_data((void *)config.image_buf, (int)(config.image_buf_size / 4));
         }
@@ -219,15 +279,16 @@ void video_task(void) {
     tx_busy = 1;
 
     start_ms += interval_ms;
-#endif
     ov2640_capture_frame(&config);
     if (config.pixformat == PIXFORMAT_RGB565) {
         ili9341_show_rgb565_data((void *)config.image_buf, (int)(config.image_buf_size / 2));
+
     } else if (config.pixformat == PIXFORMAT_YUV422) {
         ili9341_show_yuv422_data((void *)config.image_buf, (int)(config.image_buf_size / 4));
     }
 
     tud_video_n_frame_xfer(0, 0, (void *)config.image_buf, config.image_buf_size);
+#endif
 }
 
 void tud_video_frame_xfer_complete_cb(uint_fast8_t ctl_idx, uint_fast8_t stm_idx) {
@@ -244,6 +305,7 @@ int tud_video_commit_cb(uint_fast8_t ctl_idx, uint_fast8_t stm_idx,
     (void)stm_idx;
     /* convert unit to ms from 100 ns */
     interval_ms = parameters->dwFrameInterval / 10000;
+
     return VIDEO_ERROR_NONE;
 }
 
@@ -251,8 +313,12 @@ int tud_video_commit_cb(uint_fast8_t ctl_idx, uint_fast8_t stm_idx,
 // BLINKING TASK
 //--------------------------------------------------------------------+
 void led_blinking_task(void) {
-    static uint32_t start_ms = 0;
     static bool led_state = false;
+#ifdef USE_FREERTOS
+    board_led_write(led_state);
+    led_state = 1 - led_state; // toggle
+#else
+    static uint32_t start_ms = 0;
 
     // Blink every interval ms
     if (board_millis() - start_ms < blink_interval_ms)
@@ -261,4 +327,17 @@ void led_blinking_task(void) {
 
     board_led_write(led_state);
     led_state = 1 - led_state; // toggle
+#endif
 }
+
+#ifdef USE_FREERTOS
+void vApplicationTickHook(void){};
+
+void vApplicationStackOverflowHook(TaskHandle_t Task, char *pcTaskName) {
+    panic("stack overflow (not the helpful kind) for %s\n", *pcTaskName);
+}
+
+void vApplicationMallocFailedHook(void) {
+    panic("Malloc Failed\n");
+};
+#endif

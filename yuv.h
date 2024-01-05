@@ -90,4 +90,45 @@ static inline void VP8YuvToRgb565(int y, int u, int v,
 
 uint16_t yuv422_to_rgb565(int y, int u, int v);
 
+//------------------------------------------------------------------------------
+// RGB -> YUV conversion
+// Stub functions that can be called with various rounding values:
+static inline int VP8ClipUV(int uv, int rounding) {
+    uv = (uv + rounding + (128 << (YUV_FIX + 2))) >> (YUV_FIX + 2);
+    return ((uv & ~0xff) == 0) ? uv : (uv < 0) ? 0
+                                               : 255;
+}
+
+#ifndef USE_YUVj
+static inline int VP8RGBToY(int r, int g, int b, int rounding) {
+    const int luma = 16839 * r + 33059 * g + 6420 * b;
+    return (luma + rounding + (16 << YUV_FIX)) >> YUV_FIX; // no need to clip
+}
+
+static inline int VP8RGBToU(int r, int g, int b, int rounding) {
+    const int u = -9719 * r - 19081 * g + 28800 * b;
+    return VP8ClipUV(u, rounding);
+}
+
+static inline int VP8RGBToV(int r, int g, int b, int rounding) {
+    const int v = +28800 * r - 24116 * g - 4684 * b;
+    return VP8ClipUV(v, rounding);
+}
+#else
+static inline int VP8RGBToY(int r, int g, int b, int rounding) {
+    const int luma = 19595 * r + 38470 * g + 7471 * b;
+    return (luma + rounding) >> YUV_FIX; // no need to clip
+}
+static inline int VP8RGBToU(int r, int g, int b, int rounding) {
+    const int u = -11058 * r - 21710 * g + 32768 * b;
+    return VP8ClipUV(u, rounding);
+}
+static inline int VP8RGBToV(int r, int g, int b, int rounding) {
+    const int v = 32768 * r - 27439 * g - 5329 * b;
+    return VP8ClipUV(v, rounding);
+}
+#endif // USE_YUVj
+
+void rgb565_to_yuv422(uint32_t *data, int len);
+
 #endif // RP2040_YUV_H_
