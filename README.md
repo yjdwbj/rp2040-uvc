@@ -4,11 +4,12 @@ Capture video on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/r
 
 ## Hardware
 * RP2040 board
-  * [Raspberry Pi Pico](https://www.raspberrypi.org/products/raspberry-pi-pico/)
-  * ov2640 camera module within 24Mhz osc
-  * ILI9341 2.8 TFT SPI 240x420 V1.2 LCD module
+* [Raspberry Pi Pico](https://www.raspberrypi.org/products/raspberry-pi-pico/)
+* ov2640 camera module within 24Mhz osc
+* ILI9341 2.8 TFT SPI 240x420 V1.2 LCD module
+
 ![ov2640 front](images/cam_front.jpg)
-![ov2640 back](images/cam_bach.jpg)
+![ov2640 back](images/cam_back.jpg)
 ![ov2640 connected_cam](images/connected_cam.jpg)
 ![uvc](images/uvc.jpg)
 
