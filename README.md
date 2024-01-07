@@ -17,7 +17,9 @@ Capture video on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/r
 
 ```sh
 ~$ git clone  https://github.com/yjdwbj/rp2040-uvc
-~$ cd uvc_for_pico && mkdir build
+~$ cd rp2040-uvc
+~$ git submodule update --init
+~$ mkdir build
 ~$ cd build; cmake -DUSE_FREERTOS=1 ../ && make
 ```
 

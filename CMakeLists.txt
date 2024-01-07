@@ -30,6 +30,7 @@ endif()
 
 
 set(PICO_TINYUSB_PATH ${CMAKE_CURRENT_LIST_DIR}/tinyusb)
+set(TOP ${PICO_TINYUSB_PATH})
 include(${PICO_TINYUSB_PATH}/hw/bsp/rp2040/pico_sdk_import.cmake)
 include(${PICO_TINYUSB_PATH}/hw/bsp/rp2040/family.cmake)
 
