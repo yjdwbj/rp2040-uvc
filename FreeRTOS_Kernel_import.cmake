@@ -13,7 +13,6 @@ endif ()
 set(FREERTOS_KERNEL_RP2040_RELATIVE_PATH "portable/ThirdParty/GCC/RP2040")
 # undo the above
 set(FREERTOS_KERNEL_RP2040_BACK_PATH "../../../..")
-message("here is -------------> ${FREERTOS_KERNEL_RP2040_BACK_PATH}")
 
 if (NOT FREERTOS_KERNEL_PATH)
     # check if we are inside the FreeRTOS kernel tree (i.e. this file has been included directly)
@@ -57,8 +56,6 @@ endif()
 if (NOT EXISTS ${FREERTOS_KERNEL_PATH}/${FREERTOS_KERNEL_RP2040_RELATIVE_PATH}/CMakeLists.txt)
     message(FATAL_ERROR "Directory '${FREERTOS_KERNEL_PATH}' does not contain an RP2040 port here: ${FREERTOS_KERNEL_RP2040_RELATIVE_PATH}")
 endif()
-message("is ------------> ")
-message("is ------------> ${FREERTOS_KERNEL_PATH}/${FREERTOS_KERNEL_RP2040_RELATIVE_PATH}/CMakeLists.txt")
 set(FREERTOS_KERNEL_PATH ${FREERTOS_KERNEL_PATH} CACHE PATH "Path to the FreeRTOS_KERNEL" FORCE)
 
 add_subdirectory(${FREERTOS_KERNEL_PATH}/${FREERTOS_KERNEL_RP2040_RELATIVE_PATH} FREERTOS_KERNEL)

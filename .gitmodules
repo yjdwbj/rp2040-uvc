@@ -3,7 +3,7 @@
 	url = https://github.com/raspberrypi/pico-sdk
 
 [submodule "tinyusb"]
-	path = pico-sdk/lib/tinyusb
+	path = tinyusb
 	url = https://github.com/hathach/tinyusb
 
 [submodule "freertos"]

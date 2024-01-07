@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
 
-
 set(FAMILY rp2040)
 set(BOARD pico_sdk)
 
@@ -26,16 +25,15 @@ if (USE_FREERTOS)
 	message("Build with FreeRTOS support")
 	set(FREERTOS_KERNEL_PATH ${CMAKE_CURRENT_LIST_DIR}/freertos)
 	include(FreeRTOS_Kernel_import.cmake)
-
 	add_definitions(-DUSE_FREERTOS=1)
 endif()
 
 
-set(PICO_TINYUSB_PATH ${PICO_SDK_PATH}/lib/tinyusb)
+set(PICO_TINYUSB_PATH ${CMAKE_CURRENT_LIST_DIR}/tinyusb)
 include(${PICO_TINYUSB_PATH}/hw/bsp/rp2040/pico_sdk_import.cmake)
 include(${PICO_TINYUSB_PATH}/hw/bsp/rp2040/family.cmake)
 
-set(PROJECT pico-ov7670-uvc)
+set(PROJECT pico-uvc)
 project(${PROJECT} C CXX ASM)
 
 # family_initialize_project(${PROJECT} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -49,7 +47,6 @@ pico_generate_pio_header(${PROJECT} ${CMAKE_CURRENT_SOURCE_DIR}/ili9341_lcd.pio)
 
 
 target_sources(${PROJECT} PUBLIC
-#   ${CMAKE_CURRENT_SOURCE_DIR}/freertos_hook.c
   ${CMAKE_CURRENT_SOURCE_DIR}/main.c
   ${CMAKE_CURRENT_SOURCE_DIR}/ov2640.c
   ${CMAKE_CURRENT_SOURCE_DIR}/ili9341_lcd.c
