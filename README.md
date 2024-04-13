@@ -6,7 +6,7 @@ Capture video on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/r
 * RP2040 board
 * [Raspberry Pi Pico](https://www.raspberrypi.org/products/raspberry-pi-pico/)
 * ov2640 camera module within 24Mhz osc
-* ILI9341 2.8 TFT SPI 240x420 V1.2 LCD module
+* ILI9341 2.8 TFT SPI 240x320 V1.2 LCD module
 
 ![ov2640 front](images/cam_front.jpg)
 ![ov2640 back](images/cam_back.jpg)
@@ -50,7 +50,6 @@ Capture video on your [Raspberry Pi Pico](https://www.raspberrypi.com/products/r
 |  11    |   D5   |         |
 |  12    |   D6   |         |
 |  13    |   D7   |         |
-|  14    |  PCLK  |         |
 |  15    |  HSYNC |         |
 |  18    |        |  RESET  |
 |  19    |        |  RS/DC  |

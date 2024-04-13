@@ -12,19 +12,6 @@ struct ov2640_config *vconfig = NULL;
 
 // #define PIN_PWND   -1  // Also called PWDN, or set to -1 and tie to GND
 
-// struct ov2640_config config = {
-//     .sccb = i2c_default,
-//     .pin_sioc = PICO_DEFAULT_I2C_SCL_PIN,
-//     .pin_siod = PICO_DEFAULT_I2C_SDA_PIN,
-//     .pin_vsync = PIN_CAM_VSYNC,
-//     .pin_y2_pio_base = PIN_CAM_Y2_PIO_BASE,
-
-//     .pio = pio0,
-//     .pio_sm = 0,
-//     .dma_channel = 0,
-//     .image_buf = image_buf,
-//     .image_buf_size = sizeof(image_buf),
-// };
 static void
 ov2640_reg_write(uint8_t reg, uint8_t value) {
     // printf("write reg: 0x%02x, value: 0x%02x\n", reg, value);

@@ -62,7 +62,6 @@ static uint32_t blink_interval_ms = BLINK_NOT_MOUNTED;
 const int PIN_LED = 25;
 
 const int PIN_CAM_RESETB = 2;
-// const int PIN_CAM_XCLK = 3;
 const int PIN_CAM_VSYNC = 3;
 const int PIN_CAM_Y2_PIO_BASE = 6;
 
